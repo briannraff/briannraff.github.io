@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Selamat Ulang Tahun Bosku — Animasi Panjang</title>
+<style>
+  :root{
+    --bg1:#0f2027;
+    --bg2:#203a43;
+    --accent:#ffd166;
+    --accent2:#f94144;
+  }
+  html,body{
+    height:100%;
+    margin:0;
+    font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    background: linear-gradient(135deg,var(--bg1),var(--bg2));
+    overflow:hidden;
+    color:white;
+  }
+
+  /* layout */
+  .stage {
+    position:relative;
+    width:100%;
+    height:100%;
+  }
+
+  /* Canvas fullscreen for particles/fireworks */
+  canvas#fx {
+    position:absolute;
+    inset:0;
+    z-index:2;
+    pointer-events:none;
+  }
+
+  /* Balloons */
+  .balloon {
+    position:absolute;
+    bottom:-200px;
+    width:90px;
+    height:120px;
+    border-radius:60% 60% 50% 50%;
+    transform-origin:center bottom;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:white;
+    font-weight:700;
+    text-shadow:0 2px 6px rgba(0,0,0,.4);
+    z-index:3;
+    opacity:0.95;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.35);
+  }
+  .balloon::after{
+    content:'';
+    position:absolute;
+    bottom:-22px;
+    left:50%;
+    transform:translateX(-50%);
+    width:2px;
+    height:60px;
+    background:rgba(255,255,255,0.2);
+  }
+
+  /* Header text box */
+  .message {
+    position:absolute;
+    top:8%;
+    left:50%;
+    transform:translateX(-50%);
+    text-align:center;
+    z-index:4;
+    width:90%;
+    max-width:900px;
+    pointer-events:none;
+  }
+  .title {
+    font-size: clamp(28px, 6vw, 64px);
+    margin:0;
+    letter-spacing:2px;
+    font-weight:800;
+    color:var(--accent);
+    text-shadow:0 6px 22px rgba(0,0,0,0.5);
+  }
+  .subtitle {
+    margin:12px 0 0;
+    font-size: clamp(16px, 2.5vw, 28px);
+    color:#fff8e6;
+    opacity:0.92;
+    font-weight:600;
+  }
+
+  /* Sequence message center */
+  .center-msg {
+    position:absolute;
+    left:50%;
+    top:45%;
+    transform:translate(-50%,-50%);
+    z-index:4;
+    text-align:center;
+    width:90%;
+    pointer-events:none;
+  }
+  .center-msg h2{
+    margin:0;
+    font-size:clamp(24px,5vw,48px);
+    line-height:1.05;
+    color:#ffffff;
+    text-shadow:0 8px 30px rgba(0,0,0,0.6);
+    opacity:0;
+  }
+  .center-msg p{
+    margin-top:10px;
+    font-size:clamp(14px,2vw,20px);
+    color:#faf3d7;
+    opacity:0;
+  }
+
+  /* controls */
+  .controls {
+    position:absolute;
+    right:18px;
+    bottom:18px;
+    z-index:6;
+    display:flex;
+    gap:8px;
+  }
+  .btn {
+    background:rgba(0,0,0,0.5);
+    border:1px solid rgba(255,255,255,0.12);
+    padding:10px 14px;
+    border-radius:10px;
+    color:#fff;
+    cursor:pointer;
+    backdrop-filter: blur(4px);
+    font-weight:600;
+  }
+  .btn:active{ transform:translateY(1px); }
+
+  /* small instructions */
+  .note {
+    position:absolute;
+    left:18px;
+    bottom:18px;
+    z-index:6;
+    color:rgba(255,255,255,0.85);
+    font-size:12px;
+    background: rgba(0,0,0,0.35);
+    padding:8px 10px;
+    border-radius:8px;
+    border:1px solid rgba(255,255,255,0.06);
+    z-index:6;
+  }
+
+  /* subtle shimmer animation for accent */
+  @keyframes shimmer {
+    0%{ filter:brightness(1); transform:translateY(0); }
+    50%{ filter:brightness(1.15); transform:translateY(-4px); }
+    100%{ filter:brightness(1); transform:translateY(0); }
+  }
+  .title { animation: shimmer 6s ease-in-out infinite; }
+</style>
+</head>
+<body>
+  <div class="stage" id="stage">
+    <canvas id="fx"></canvas>
+
+    <!-- Balloons (we'll clone/animate them via JS, but put one template for CSS) -->
+    <div class="balloon" id="balloon-template" style="display:none;">🎉</div>
+
+    <div class="message">
+      <h1 class="title">Selamat Ulang Tahun, Bosku!</h1>
+      <div class="subtitle">Semoga sehat, sukses, dan penuh kebahagiaan.</div>
+    </div>
+
+    <div class="center-msg" id="centerMsg">
+      <h2 id="msg1">Hari ini khusus untukmu.</h2>
+      <h2 id="msg2">Terima kasih atas kepemimpinan & inspirasimu.</h2>
+      <h2 id="msg3">Semoga semua impian tercapai.</h2>
+      <h2 id="msg4">🎂 Selamat Ulang Tahun! 🎂</h2>
+      <p id="finalNote">-- Dari Timmu yang selalu mendukung --</p>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="playBtn">Play</button>
+      <button class="btn" id="pauseBtn">Pause</button>
+      <button class="btn" id="muteBtn">Mute</button>
+    </div>
+
+    <div class="note">Klik Play untuk memulai animasi & musik</div>
+  </div>
+
+<script>
+/* ---------------------------
+  Utility & setup
+----------------------------*/
+const canvas = document.getElementById('fx');
+const ctx = canvas.getContext('2d');
+let W = canvas.width = innerWidth;
+let H = canvas.height = innerHeight;
+
+window.addEventListener('resize', ()=> {
+  W = canvas.width = innerWidth;
+  H = canvas.height = innerHeight;
+});
+
+/* ---------------------------
+  Balloons (long slow floating)
+----------------------------*/
+const stage = document.getElementById('stage');
+const balloonTemplate = document.getElementById('balloon-template');
+
+const balloonColors = ['#ff6b6b','#f77f00','#ffd166','#06d6a0','#8338ec','#ffadad'];
+
+function createBalloon(xPct, delay, scale=1, text=''){
+  const b = balloonTemplate.cloneNode(true);
+  b.style.display='flex';
+  b.style.left = (xPct*100) + 'vw';
+  b.style.transform = translateX(-50%) scale(${scale});
+  b.style.background = balloonColors[Math.floor(Math.random()*balloonColors.length)];
+  b.style.transition = 'transform 0.6s ease';
+  b.innerHTML = text || '🎈';
+  stage.appendChild(b);
+
+  // animate upward using CSS-like transitions via JS step loop (long duration)
+  const totalDuration = 60 + Math.random()*50; // seconds - long
+  const start = performance.now() + delay*1000;
+  const startBottom = -180;
+  const endBottom = H + 200;
+  const amplitude = 60 + Math.random()*120;
+  function step(t){
+    if(t < start) { requestAnimationFrame(step); return; }
+    const elapsed = (t - start) / 1000;
+    const prog = Math.min(elapsed/totalDuration, 1);
+    // bottom position
+    const bottomPx = startBottom + (endBottom - startBottom) * prog;
+    // horizontal sway
+    const sway = Math.sin(prog * Math.PI * (1 + Math.random()*3)) * amplitude;
+    b.style.bottom = bottomPx + 'px';
+    b.style.left = calc(${xPct*100}vw + ${sway}px);
+    // gentle rotation
+    b.style.transform = translateX(-50%) rotate(${Math.sin(prog*Math.PI*2)*8}deg) scale(${scale});
+    // fade in/out
+    if(prog < 0.08) b.style.opacity = (prog/0.08).toFixed(2);
+    else if(prog > 0.92) b.style.opacity = (1 - (prog-0.92)/0.08).toFixed(2);
+    else b.style.opacity = 0.95;
+
+    if(prog < 1) requestAnimationFrame(step);
+    else b.remove();
+  }
+  requestAnimationFrame(step);
+}
+
+// spawn many balloons slowly
+function spawnBalloons(count=10, interval=3){
+  for(let i=0;i<count;i++){
+    setTimeout(()=> {
+      createBalloon(Math.random(), 0, 0.9 + Math.random()*0.7, ['🎉','🎂','✨','🎈'][Math.floor(Math.random()*4)]);
+    }, i*interval*1000);
+  }
+}
+
+/* ---------------------------
+  Confetti & Fireworks on canvas
+----------------------------*/
+let particles = [];
+let fireworks = [];
+let running = false;
+
+function rand(min,max){ return Math.random()*(max-min)+min; }
+
+class Confetti {
+  constructor(x,y, vx, vy, size, color, life){
+    this.x=x; this.y=y; this.vx=vx; this.vy=vy; this.size=size; this.c=color; this.life=life; this.age=0;
+    this.spin = rand(-0.2,0.2);
+  }
+  step(dt){
+    this.age += dt;
+    this.vy += 30*dt; // gravity
+    this.x += this.vx*dt;
+    this.y += this.vy*dt;
+    this.vx *= 0.995;
+    this.vy *= 0.995;
+  }
+  draw(ctx){
+    ctx.save();
+    ctx.translate(this.x,this.y);
+    ctx.rotate(this.age*this.spin);
+    ctx.fillStyle=this.c;
+    ctx.fillRect(-this.size/2,-this.size/2,this.size,this.size*0.6);
+    ctx.restore();
+  }
+}
+
+class FireworkParticle {
+  constructor(x,y, vx, vy, life, color){
+    this.x=x; this.y=y; this.vx=vx; this.vy=vy; this.life=life; this.age=0; this.c=color;
+  }
+  step(dt){
+    this.age += dt;
+    this.vy += 80*dt;
+    this.x += this.vx*dt;
+    this.y += this.vy*dt;
+    this.vx *= 0.995;
+    this.vy *= 0.995;
+  }
+  draw(ctx){
+    const alpha = Math.max(0,1 - this.age/this.life);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = this.c;
+    ctx.beginPath();
+    ctx.arc(this.x,this.y, Math.max(1, 3*(1-alpha)), 0, Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
+function explode(x,y, color, amount=40){
+  for(let i=0;i<amount;i++){
+    const ang = Math.random()*Math.PI*2;
+    const sp = rand(60,260);
+    fireworks.push(new FireworkParticle(x,y, Math.cos(ang)*sp, Math.sin(ang)*sp, rand(1.2,2.6), color));
+  }
+  // generate confetti too
+  for(let i=0;i<25;i++){
+    particles.push(new Confetti(x + rand(-40,40), y + rand(-40,40), rand(-160,160), rand(-80,200), rand(6,12), balloonColors[Math.floor(Math.random()*balloonColors.length)], rand(1.5,3)));
+  }
+}
+
+function spawnRandomFirework(){
+  const x = rand(100, W-100);
+  const y = rand(80, H/2);
+  const c = hsl(${Math.floor(rand(0,360))},90%,60%);
+  explode(x,y,c, 50);
+}
+
+let last = performance.now();
+function animate(now){
+  if(!running) return;
+  const dt = Math.min(0.05, (now-last)/1000);
+  last = now;
+
+  // clear with slight alpha to create trail
+  ctx.fillStyle = "rgba(6,8,20,0.2)";
+  ctx.fillRect(0,0,W,H);
+
+  // step & draw fireworks
+  for(let i=fireworks.length-1;i>=0;i--){
+    fireworks[i].step(dt);
+    fireworks[i].draw(ctx);
+    if(fireworks[i].age > fireworks[i].life) fireworks.splice(i,1);
+  }
+
+  // confetti
+  for(let i=particles.length-1;i>=0;i--){
+    particles[i].step(dt);
+    particles[i].draw(ctx);
+    if(particles[i].age > particles[i].life || particles[i].y > H+50) particles.splice(i,1);
+  }
+
+  requestAnimationFrame(animate);
+}
+
+/* ---------------------------
+  Sequence of messages (long)
+----------------------------*/
+const seq = [
+  {id:'msg1', delay:2000, in:1200, show:6000, out:1000},
+  {id:'msg2', delay:10000, in:1200, show:7000, out:1000},
+  {id:'msg3', delay:20000, in:1200, show:7000, out:1000},
+  {id:'msg4', delay:32000, in:1200, show:12000, out:1500},
+  {id:'finalNote', delay:46000, in:1200, show:25000, out:1200}
+];
+
+function fadeIn(el, dur){
+  el.style.transition = opacity ${dur}ms cubic-bezier(.2,.8,.2,1), transform ${dur}ms cubic-bezier(.2,.8,.2,1);
+  el.style.opacity = 1;
+  el.style.transform = 'translateY(0) scale(1)';
+}
+
+function fadeOut(el, dur){
+  el.style.transition = opacity ${dur}ms ease, transform ${dur}ms ease;
+  el.style.opacity = 0;
+  el.style.transform = 'translateY(20px) scale(0.98)';
+}
+
+function runSequence(){
+  seq.forEach(item => {
+    const el = document.getElementById(item.id);
+    if(!el) return;
+    // initial state
+    el.style.opacity = 0;
+    el.style.transform = 'translateY(10px) scale(0.98)';
+    // show in
+    setTimeout(()=> fadeIn(el, item.in), item.delay);
+    // trigger small fireworks when it appears
+    setTimeout(()=> {
+      // spawn multiple fireworks near center
+      for(let i=0;i<3;i++) setTimeout(()=> spawnRandomFirework(), i*300);
+    }, item.delay + item.in);
+    // schedule fade out
+    setTimeout(()=> fadeOut(el, item.out), item.delay + item.in + item.show);
+  });
+}
+
+/* ---------------------------
+  Music: simple synth melody (Happy Birthday-ish)
+----------------------------*/
+let audioCtx = null;
+let masterGain = null;
+let isMuted = false;
+function initAudio(){
+  if(audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0.35;
+  masterGain.connect(audioCtx.destination);
+}
+
+// schedule a note
+function playNote(time, freq, duration, type='sine', vol=1){
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = type;
+  o.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, time);
+  g.gain.exponentialRampToValueAtTime(vol, time + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, time + duration - 0.02);
+  o.connect(g);
+  g.connect(masterGain);
+  o.start(time);
+  o.stop(time + duration);
+}
+
+// convert MIDI-ish scale (C4=261.63)
+const NOTES = {
+  'C4':261.63,'D4':293.66,'E4':329.63,'F4':349.23,'G4':392.00,'A4':440.00,'B4':493.88,
+  'C5':523.25,'D5':587.33,'E5':659.25,'G3':196.00
+};
+
+// simple "happy birthday" like melody (pacing stretched to be long)
+const melody = [
+  ['G4',0.6],['G4',0.6],['A4',1.4],['G4',1.4],['C5',1.4],['B4',2.0],
+  ['G4',0.6],['G4',0.6],['A4',1.4],['G4',1.4],['D5',1.4],['C5',2.0],
+  ['G4',0.6],['G4',0.6],['G5',1.4],['E5',1.4],['C5',1.4],['B4',1.4],['A4',2.0],
+  ['F5',0.6],['F5',0.6],['E5',1.4],['C5',1.4],['D5',1.4],['C5',2.0]
+];
+
+// play melody but slowed down so it's long
+function playMelody(loop=false){
+  if(!audioCtx) initAudio();
+  const now = audioCtx.currentTime + 0.1;
+  let t = now;
+  const pace = 0.9; // larger => longer
+  melody.forEach(note=>{
+    const freq = NOTES[note[0]] || 440;
+    const dur = note[1] * pace;
+    playNote(t, freq, dur*0.95, 'sine', 0.9);
+    t += dur;
+  });
+  // add light harmonics / pad
+  const padStart = now;
+  const pad = audioCtx.createOscillator();
+  pad.type = 'sawtooth';
+  pad.frequency.value = NOTES['C4'];
+  const pg = audioCtx.createGain();
+  pg.gain.value = 0.08;
+  pad.connect(pg);
+  pg.connect(masterGain);
+  pad.start(padStart);
+  pad.stop(t + 0.5);
+  if(loop){
+    // schedule next loop a bit after
+    setTimeout(()=> { if(!isMuted) playMelody(true); }, (t - now)*1000 + 200);
+  }
+}
+
+/* ---------------------------
+  Controls
+----------------------------*/
+const playBtn = document.getElementById('playBtn');
+const pauseBtn = document.getElementById('pauseBtn');
+const muteBtn = document.getElementById('muteBtn');
+
+playBtn.addEventListener('click', ()=> {
+  if(!audioCtx) initAudio();
+  if(audioCtx.state === 'suspended') audioCtx.resume();
+  if(!running){
+    running = true;
+    last = performance.now();
+    requestAnimationFrame(animate);
+    runSequence();
+    // spawn long stream of balloons
+    spawnBalloons(20, 2.5);
+    // periodic fireworks & confetti
+    fireworkInterval = setInterval(()=> {
+      spawnRandomFirework();
+      // occasional big explosion
+      if(Math.random() < 0.25) explode(rand(200, W-200), rand(80, H/2), hsl(${Math.floor(rand(0,360))},90%,60%), 90);
+    }, 3000);
+    // start music
+    isMuted = false;
+    playMelody(true);
+  }
+});
+
+pauseBtn.addEventListener('click', ()=> {
+  // pause animation & audio
+  running = false;
+  clearInterval(fireworkInterval);
+  if(audioCtx) audioCtx.suspend();
+});
+
+muteBtn.addEventListener('click', ()=> {
+  if(!audioCtx) initAudio();
+  isMuted = !isMuted;
+  masterGain.gain.value = isMuted ? 0 : 0.35;
+  muteBtn.textContent = isMuted ? 'Unmute' : 'Mute';
+});
+
+/* ---------------------------
+  Start (no autoplay - wait user)
+----------------------------*/
+let fireworkInterval = null;
+/* No auto start: user must press Play due to browser autoplay policies */
+
+/* tiny helper to expose spawn functions on dev console */
+window._fx = {spawnRandomFirework, explode, createBalloon};
+
+</script>
+</body>
+</html>
