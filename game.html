@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game Hompimpa</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+    }
+    h1 {
+        color: white;
+        text-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+    }
+    #result {
+        font-size: 2rem;
+        font-weight: bold;
+        color: yellow;
+        margin-top: 20px;
+        text-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+    }
+    button {
+        padding: 15px 25px;
+        font-size: 1rem;
+        font-weight: bold;
+        border: none;
+        border-radius: 10px;
+        background: #ff5f6d;
+        color: white;
+        cursor: pointer;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        transition: 0.2s;
+    }
+    button:hover {
+        background: #ff2e4d;
+    }
+</style>
+</head>
+<body>
+
+<h1>🎮 Game Hompimpa 🎮</h1>
+<button onclick="play()">Mulai!</button>
+<div id="result"></div>
+
+<script>
+    const pilihan = ["Ali", "Pao", "Gam"]; // bisa diganti sesuai versi hompimpa kamu
+
+    function play() {
+        let hasil = pilihan[Math.floor(Math.random() * pilihan.length)];
+        document.getElementById("result").textContent = "📢 " + hasil + "!";
+    }
+</script>
+
+</body>
+</html>
